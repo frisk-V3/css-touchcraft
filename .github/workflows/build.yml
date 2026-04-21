@@ -1,7 +1,10 @@
 name: Build cross-platform executables
 
 on:
-  push
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -16,12 +19,12 @@ jobs:
         run: pip install pyinstaller
       - name: Build exe
         run: |
-          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+          pyinstaller --noconfirm --onefile --name auto_css_windows main.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: auto_css_windows_exe
-          path: dist/auto_css_web.exe
+          path: dist/auto_css_windows.exe
 
   build-macos:
     runs-on: macos-latest
@@ -35,12 +38,12 @@ jobs:
         run: pip install pyinstaller
       - name: Build macOS binary
         run: |
-          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+          pyinstaller --noconfirm --onefile --name auto_css_macos main.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: auto_css_macos_binary
-          path: dist/auto_css_web
+          name: auto_css_macos_bin
+          path: dist/auto_css_macos
 
   build-linux:
     runs-on: ubuntu-latest
@@ -57,12 +60,12 @@ jobs:
           pip install pyinstaller
       - name: Build linux binary
         run: |
-          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+          pyinstaller --noconfirm --onefile --name auto_css_linux main.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: auto_css_linux_binary
-          path: dist/auto_css_web
+          name: auto_css_linux_bin
+          path: dist/auto_css_linux
 
   create_release:
     needs: [build-windows, build-macos, build-linux]
@@ -76,14 +79,14 @@ jobs:
       - name: Download macos artifact
         uses: actions/download-artifact@v4
         with:
-          name: auto_css_macos_binary
+          name: auto_css_macos_bin
           path: artifacts
       - name: Download linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: auto_css_linux_binary
+          name: auto_css_linux_bin
           path: artifacts
-      - name: Create Release
+      - name: Create release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
@@ -94,8 +97,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/auto_css_web.exe
-            artifacts/auto_css_web
-            artifacts/auto_css_web
+            artifacts/auto_css_windows.exe
+            artifacts/auto_css_macos
+            artifacts/auto_css_linux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
