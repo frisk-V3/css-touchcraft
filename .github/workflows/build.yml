@@ -1,0 +1,104 @@
+name: Build cross-platform executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install pyinstaller
+      - name: Build exe
+        run: |
+          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto_css_windows_exe
+          path: dist/auto_css_web.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install pyinstaller
+      - name: Build macOS binary
+        run: |
+          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto_css_macos_binary
+          path: dist/auto_css_web
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+          pip install pyinstaller
+      - name: Build linux binary
+        run: |
+          pyinstaller --noconfirm --onefile --name auto_css_web auto_css_web.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto_css_linux_binary
+          path: dist/auto_css_web
+
+  create_release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auto_css_windows_exe
+          path: artifacts
+      - name: Download macos artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auto_css_macos_binary
+          path: artifacts
+      - name: Download linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auto_css_linux_binary
+          path: artifacts
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name || github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/auto_css_web.exe
+            artifacts/auto_css_web
+            artifacts/auto_css_web
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
